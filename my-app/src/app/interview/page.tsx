@@ -20,6 +20,8 @@ function ChatInterface() {
   // Get data from URL (e.g., /chat?session_id=...&user_name=...)
   const sessionId = searchParams.get("session_id");
   const userName = searchParams.get("user_name");
+  const industry = searchParams.get("industry") || "Random";
+  const domain = searchParams.get("domain") || "Random";
 
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,8 +55,8 @@ function ChatInterface() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
-
     try {
+      // ... inside sendMessage try block ...
       const response = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -62,6 +64,9 @@ function ChatInterface() {
           prompt: input,
           session_id: sessionId,
           user_name: userName,
+          // --- PASS THEM HERE ---
+          industry: industry, 
+          domain: domain
         }),
       });
 
