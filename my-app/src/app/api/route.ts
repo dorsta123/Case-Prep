@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { generateText } from "@/lib/gemini"; // Check this path!
+import { generateText } from "@/lib/gemini"; 
 import { createClient } from "@supabase/supabase-js";
-
-export const maxDuration = 60;
 
 // DEBUG: Log to see if keys are loaded
 console.log("Checking Keys:", {
@@ -19,9 +17,10 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { prompt, session_id, user_name } = body;
+    // 1. Destructure the NEW fields (industry, domain)
+    const { prompt, session_id, user_name, industry, domain } = body;
 
-    console.log("1. Received Request:", { session_id, user_name, prompt });
+    console.log("1. Received Request:", { session_id, user_name, industry, domain });
 
     // Validate inputs
     if (!prompt || !session_id) {
@@ -37,22 +36,43 @@ export async function POST(req: Request) {
       .eq("session_id", session_id)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "Not Found" which is okay
+    if (fetchError && fetchError.code !== 'PGRST116') {
        console.error("Supabase Fetch Error:", fetchError);
     }
 
     let history = session?.history || [];
     console.log("3. History found:", history.length, "messages");
 
-    // 3. Generate Text
+    // --- NEW LOGIC: CONTEXT INJECTION ---
+    // We only modify the prompt if:
+    // A) It is the start of the chat (history is empty)
+    // B) The user actually selected something specific (not "Random")
+    let finalPrompt = prompt;
+
+    if (history.length === 0) {
+      const selectedIndustry = industry && industry !== "Random" ? industry : null;
+      const selectedDomain = domain && domain !== "Random" ? domain : null;
+
+      if (selectedIndustry || selectedDomain) {
+        console.log(">> Injecting Custom Context:", selectedIndustry, selectedDomain);
+        finalPrompt = `${prompt} 
+        [SYSTEM HIDDEN INSTRUCTION: The candidate explicitly requested a '${selectedDomain || "General"}' case in the '${selectedIndustry || "General"}' industry. 
+        Ignore your default randomizer. 
+        Start a case fitting this description immediately.]`;
+      }
+    }
+
+    // 3. Generate Text (Send the INJECTED prompt to Gemini)
     console.log("4. Calling Gemini...");
-    const aiResponseText = await generateText(history, prompt);
+    const aiResponseText = await generateText(history, finalPrompt);
     console.log("5. Gemini Replied");
 
     // 4. Update DB
+    // IMPORTANT: We save the ORIGINAL 'prompt' to the DB, not 'finalPrompt'.
+    // This keeps the user's chat bubble clean (hides the system instruction from the UI).
     const updatedHistory = [
       ...history,
-      { role: "user", parts: [{ text: prompt }] },
+      { role: "user", parts: [{ text: prompt }] }, // <--- Clean prompt saved
       { role: "model", parts: [{ text: aiResponseText }] },
     ];
 
@@ -71,7 +91,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("CRITICAL SERVER ERROR:", error);
-    // Return a JSON error so the frontend doesn't crash with "Unexpected token <"
     return NextResponse.json(
       { error: error.message || "Internal Server Error" }, 
       { status: 500 }
