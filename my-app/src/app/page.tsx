@@ -1,6 +1,23 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from "@headlessui/react";
+import { ChevronUpDownIcon, CheckIcon } from "@heroicons/react/20/solid";
+
+const industries = [
+  { name: "🎲 Surprise Me (Random)", value: "Random" },
+  { category: "TMT (Tech, Media, Telecom)", options: ["Technology & SaaS", "Media & Entertainment", "Telecommunications"] },
+  { category: "Consumer & Retail", options: ["Retail & E-commerce", "CPG (Food, Bev, Household)", "Automotive & Mobility"] },
+  { category: "Heavy Industry", options: ["Energy, Oil & Gas", "Mining & Metals", "Airlines & Logistics", "Manufacturing & Industrials"] },
+  { category: "Services & Public", options: ["Financial Services & Fintech", "Healthcare & Pharma", "Private Equity", "Public Sector & Education"] },
+];
+
+const domains = [
+  { name: "🎲 Surprise Me (Random)", value: "Random" },
+  { category: "Core Strategy", options: ["Profitability", "Market Entry", "Growth Strategy", "Pricing Strategy"] },
+  { category: "Transactions", options: ["M&A", "Private Equity Deal"] },
+  { category: "Operations & Specialized", options: ["Operations & Supply Chain", "New Product Launch", "Turnaround", "Non-Profit / Social Impact"] },
+];
 
 export default function LandingPage() {
   const [name, setName] = useState("");
@@ -13,17 +30,8 @@ export default function LandingPage() {
     e.preventDefault();
     if (!name.trim()) return;
     setIsLoading(true);
-
     const sessionId = `${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-    
-    // Pass the selected Industry and Domain to the URL
-    const query = new URLSearchParams({
-      session_id: sessionId,
-      user_name: name,
-      industry: industry,
-      domain: domain
-    }).toString();
-
+    const query = new URLSearchParams({ session_id: sessionId, user_name: name, industry, domain }).toString();
     router.push(`/interview?${query}`);
   };
 
@@ -33,8 +41,7 @@ export default function LandingPage() {
         <h1 className="text-3xl font-bold text-center mb-2 text-black">Case Prep AI</h1>
         <p className="text-gray-500 text-center mb-8">Customize your interview session</p>
 
-        <form onSubmit={handleStart} className="space-y-4">
-          
+        <form onSubmit={handleStart} className="space-y-6">
           {/* Name Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
@@ -47,66 +54,79 @@ export default function LandingPage() {
             />
           </div>
 
-          {/* Expanded Industry List */}
-          <div>
+          {/* Industry Dropdown */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Target Industry</label>
-            <select
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Random">🎲 Surprise Me (Random)</option>
-              <optgroup label="TMT (Tech, Media, Telecom)">
-                <option value="Technology & SaaS">Technology & SaaS</option>
-                <option value="Media & Entertainment">Media & Entertainment</option>
-                <option value="Telecommunications">Telecommunications</option>
-              </optgroup>
-              <optgroup label="Consumer & Retail">
-                <option value="Retail & E-commerce">Retail & E-commerce</option>
-                <option value="CPG (Consumer Packaged Goods)">CPG (Food, Bev, Household)</option>
-                <option value="Automotive & Mobility">Automotive & Mobility</option>
-              </optgroup>
-              <optgroup label="Heavy Industry">
-                <option value="Energy, Oil & Gas">Energy, Oil & Gas</option>
-                <option value="Mining & Metals">Mining & Metals</option>
-                <option value="Airlines & Logistics">Airlines & Logistics</option>
-                <option value="Manufacturing">Manufacturing & Industrials</option>
-              </optgroup>
-              <optgroup label="Services & Public">
-                <option value="Financial Services & Fintech">Financial Services & Fintech</option>
-                <option value="Healthcare & Pharma">Healthcare & Pharma</option>
-                <option value="Private Equity">Private Equity</option>
-                <option value="Public Sector & Education">Public Sector & Education</option>
-              </optgroup>
-            </select>
+            <Listbox value={industry} onChange={setIndustry}>
+              <ListboxButton className="relative w-full p-3 border border-gray-300 rounded-lg text-left bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span className="block truncate">{industry}</span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </span>
+              </ListboxButton>
+              <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+                <ListboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                  {industries.map((item, i) => (
+                    <div key={i}>
+                      {item.name ? (
+                        <ListboxOption value={item.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-blue-100 text-blue-900' : 'text-gray-900'}`}>
+                          {item.name}
+                        </ListboxOption>
+                      ) : (
+                        <>
+                          <div className="bg-gray-50 px-3 py-1 text-xs font-bold text-gray-500 uppercase tracking-wider">{item.category}</div>
+                          {item.options?.map((opt) => (
+                            <ListboxOption key={opt} value={opt} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-blue-600 text-white' : 'text-gray-900'}`}>
+                              {({ selected }) => (
+                                <>
+                                  <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>{opt}</span>
+                                  {selected ? <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600"><CheckIcon className="h-5 w-5" /></span> : null}
+                                </>
+                              )}
+                            </ListboxOption>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </Listbox>
           </div>
 
-          {/* Expanded Domain List */}
-          <div>
+          {/* Case Type Dropdown */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Case Type</label>
-            <select
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Random">🎲 Surprise Me (Random)</option>
-              <optgroup label="Core Strategy">
-                <option value="Profitability">Profitability (Declining Profits)</option>
-                <option value="Market Entry">Market Entry (New Geo/Product)</option>
-                <option value="Growth Strategy">Growth Strategy (Revenue Uplift)</option>
-                <option value="Pricing Strategy">Pricing Strategy</option>
-              </optgroup>
-              <optgroup label="Transactions">
-                <option value="M&A">M&A (Acquisition / Due Diligence)</option>
-                <option value="Private Equity Deal">Private Equity LBO</option>
-              </optgroup>
-              <optgroup label="Operations & Specialized">
-                <option value="Operations & Supply Chain">Operations & Supply Chain</option>
-                <option value="New Product Launch">New Product Launch</option>
-                <option value="Turnaround">Turnaround (Failing Business)</option>
-                <option value="Non-Profit / Social Impact">Non-Profit / Social Impact</option>
-              </optgroup>
-            </select>
+            <Listbox value={domain} onChange={setDomain}>
+              <ListboxButton className="relative w-full p-3 border border-gray-300 rounded-lg text-left bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span className="block truncate">{domain}</span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </span>
+              </ListboxButton>
+              <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
+                <ListboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                  {domains.map((item, i) => (
+                    <div key={i}>
+                      {item.name ? (
+                        <ListboxOption value={item.value} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-blue-100 text-blue-900' : 'text-gray-900'}`}>
+                          {item.name}
+                        </ListboxOption>
+                      ) : (
+                        <>
+                          <div className="bg-gray-50 px-3 py-1 text-xs font-bold text-gray-500 uppercase tracking-wider">{item.category}</div>
+                          {item.options?.map((opt) => (
+                            <ListboxOption key={opt} value={opt} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-blue-600 text-white' : 'text-gray-900'}`}>
+                              {opt}
+                            </ListboxOption>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </Listbox>
           </div>
 
           <button
