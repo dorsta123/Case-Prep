@@ -1,4 +1,5 @@
 "use client";
+import { createClient } from "@supabase/supabase-js";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from "@headlessui/react";
@@ -19,6 +20,11 @@ const domains = [
   { category: "Operations & Specialized", options: ["Operations & Supply Chain", "New Product Launch", "Turnaround", "Non-Profit / Social Impact"] },
 ];
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function LandingPage() {
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("Random");
@@ -26,14 +32,53 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleStart = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setIsLoading(true);
+const handleStart = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!name.trim()) return;
+  setIsLoading(true);
+
+  try {
+    // 1. Check if user exists
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("username")
+      .eq("username", name)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // User doesn't exist, let's create them (Assigning the ID)
+      const { error: insertError } = await supabase
+        .from("users")
+        .insert([{ username: name }]);
+      
+      if (insertError) throw insertError;
+      console.log("New guest ID assigned:", name);
+    } else {
+      // User exists, they are "logging in" to their existing ID
+      console.log("Welcome back:", name);
+    }
+
+    // 2. Proceed to interview
     const sessionId = `${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-    const query = new URLSearchParams({ session_id: sessionId, user_name: name, industry, domain }).toString();
+    const query = new URLSearchParams({
+      session_id: sessionId,
+      user_name: name,
+      industry,
+      domain
+    }).toString();
+
     router.push(`/interview?${query}`);
-  };
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Could not assign Guest ID. Try a different name.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
