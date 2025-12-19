@@ -25,24 +25,21 @@ function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [evaluation, setEvaluation] = useState<any>(null);
   
-  // New States for UX Buffer
+  // UX State for accidental clicks and loading
   const [showConfirm, setShowConfirm] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  // --- 1. STEADY & PLAUSIBLE PROGRESS LOGIC ---
+  // --- 1. PROGRESS LOGIC (Steady & Plausible) ---
   const calculatePlausibleProgress = (currentMessages: Message[]) => {
     if (currentMessages.length === 0) return 0;
-
     const userMessages = currentMessages.filter(m => m.role === 'user');
     const historyText = currentMessages.map(m => m.parts[0].text.toLowerCase()).join(" ");
 
-    // Base Momentum: Steady growth that slows down over time (Decay function)
     let baseScore = 0;
     for (let i = 1; i <= userMessages.length; i++) {
       baseScore += Math.max(4 - (i * 0.1), 0.5); 
     }
 
-    // Logical Milestones: Multi-category data keywords
     let milestoneBoost = 0;
     const dataLibrary = {
       profitability: ["revenue", "cost", "profit", "margin", "fixed", "variable", "ebitda", "opex", "cogs"],
@@ -55,12 +52,8 @@ function ChatInterface() {
     const uniqueKeywordsFound = allKeywords.filter(kw => historyText.includes(kw));
     milestoneBoost += Math.min(uniqueKeywordsFound.length * 3, 30); 
 
-    // Quant Check
-    if (/\d+|%/.test(historyText) && userMessages.length > 5) {
-      milestoneBoost += 15;
-    }
+    if (/\d+|%/.test(historyText) && userMessages.length > 5) milestoneBoost += 15;
 
-    // Final Phase Detection
     const lastAI = currentMessages.filter(m => m.role === 'model').pop()?.parts[0].text.toLowerCase() || "";
     const isClosing = lastAI.includes("recommendation") || lastAI.includes("conclude") || lastAI.includes("summary");
 
@@ -72,33 +65,38 @@ function ChatInterface() {
 
   const currentProgress = calculatePlausibleProgress(messages);
 
-  // --- 2. END CASE FLOW (WITH BUFFER) ---
+  // --- 2. END CASE LOGIC (With Confirmation & LP Calculation) ---
   const handleEndCase = async () => {
-    setShowConfirm(false);
-    setIsEvaluating(true);
-    try {
-      const response = await fetch("/api/evaluate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          history: messages, 
-          session_id: sessionId,
-          user_name: userName,
-          completion_rate: Math.round(currentProgress)
-        }),
-      });
-      
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      setEvaluation(data);
-    } catch (error: any) {
-      alert("Evaluation failed: " + error.message);
-    } finally {
-      setIsEvaluating(false);
-    }
-  };
+  setShowConfirm(false);
+  setIsEvaluating(true);
 
-  // --- 3. MESSAGING LOGIC ---
+  try {
+    // 1. Calculate LP locally: (Score * Completion%) / 10
+    // If score is 26 and completion is 18%, this equals +1 LP (Math.max(1, 0.46))
+    const lpToGain = Math.max(1, Math.floor((evaluation?.overall_score || 0 * (currentProgress / 100)) / 10));
+
+    const response = await fetch("/api/evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        history: messages, 
+        session_id: sessionId,
+        user_name: userName,
+        lp_to_add: lpToGain, // Send the +1 or +2 here
+        completion_rate: Math.round(currentProgress)
+      }),
+    });
+    
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    setEvaluation(data);
+  } catch (error: any) {
+    alert("Evaluation failed: " + error.message);
+  } finally {
+    setIsEvaluating(false);
+  }
+};
+  // --- 3. CHAT LOGIC ---
   useEffect(() => {
     if (!sessionId) return;
     const fetchHistory = async () => {
@@ -130,7 +128,7 @@ function ChatInterface() {
     }
   };
 
-  if (!sessionId) return <div className="p-10">Error: No Session ID found.</div>;
+  if (!sessionId) return <div className="p-10 font-bold">Error: No Session ID found.</div>;
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 bg-gray-50">
@@ -139,14 +137,14 @@ function ChatInterface() {
         {/* Header */}
         <div className="mb-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-black tracking-tight">Case Session</h1>
-          <a href="/" className="text-sm font-bold text-blue-600">New Case</a>
+          <a href="/" className="text-sm font-bold text-blue-600 hover:underline">New Case</a>
         </div>
 
         {/* Chat Window */}
         <div className="flex-1 bg-white p-6 rounded-xl shadow-sm overflow-y-auto mb-4 border border-gray-200 custom-scrollbar">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <p className="text-gray-400">Welcome, <strong>{userName}</strong>.<br />Type "Start" to begin the case.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center opacity-40">
+              <p>Welcome, <strong>{userName}</strong>. Type "Start" to begin.</p>
             </div>
           ) : (
             messages.map((msg, index) => (
@@ -170,56 +168,58 @@ function ChatInterface() {
           </div>
         </div>
 
-        {/* Input Controls */}
+        {/* Controls */}
         <div className="flex gap-2 mb-4">
           <input
-            className="flex-1 p-4 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-blue-500 outline-none"
+            className="flex-1 p-4 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             placeholder="Address the prompt..."
             disabled={isLoading || isEvaluating}
           />
-          <button onClick={sendMessage} disabled={isLoading || isEvaluating} className="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50">Send</button>
-          <button onClick={() => setShowConfirm(true)} disabled={isLoading || isEvaluating} className="bg-red-500 text-white px-4 rounded-xl font-bold hover:bg-red-600 transition">End Case</button>
+          <button onClick={sendMessage} disabled={isLoading || isEvaluating} className="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 transition-all">Send</button>
+          <button onClick={() => setShowConfirm(true)} disabled={isLoading || isEvaluating} className="bg-red-500 text-white px-4 rounded-xl font-bold hover:bg-red-600 transition shadow-sm">End Case</button>
         </div>
 
-        {/* --- MODALS & OVERLAYS --- */}
+        {/* --- MODALS --- */}
 
-        {/* 1. Confirmation Pop-up */}
+        {/* 1. Confirmation Modal */}
         {showConfirm && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
             <div className="bg-white p-8 rounded-2xl max-w-sm w-full shadow-2xl text-center">
               <h3 className="text-xl font-black mb-2">Finish Interview?</h3>
               <p className="text-gray-500 text-sm mb-6">Are you ready to receive your final Partner evaluation? You cannot resume after this.</p>
               <div className="flex gap-3">
-                <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 font-bold text-gray-400 hover:bg-gray-50 rounded-xl transition">Back</button>
+                <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 font-bold text-gray-400 hover:bg-gray-50 rounded-xl">Back</button>
                 <button onClick={handleEndCase} className="flex-1 py-3 font-bold bg-black text-white rounded-xl shadow-lg">Confirm</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* 2. Circular Loading Buffer */}
+        {/* 2. Loading Buffer Circle */}
         {isEvaluating && (
           <div className="fixed inset-0 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center z-[70]">
-            <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+            <div className="w-12 h-12 border-4 border-gray-100 border-t-blue-600 rounded-full animate-spin mb-4"></div>
             <p className="text-sm font-black text-black uppercase tracking-widest animate-pulse">Partner is synthesizing results...</p>
           </div>
         )}
 
-        {/* 3. Evaluation Result Modal (Scrollable) */}
+        {/* 3. Scrollable Result Card */}
         {evaluation && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
               <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div>
-                  <h2 className="text-2xl font-black text-black">Case Results</h2>
+                  <h2 className="text-2xl font-black text-black leading-tight">Case Results</h2>
                   <p className="text-blue-600 font-bold text-sm">Score: {evaluation.overall_score}/100</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] uppercase font-bold text-gray-400">LP Gained</p>
-                  <p className="text-3xl font-black text-green-600">+{Math.max(1, Math.floor((evaluation.overall_score * (currentProgress / 100)) / 10))}</p>
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">LP Gained</p>
+                  <p className="text-3xl font-black text-green-600">
+                    +{evaluation.overall_score > 0 ? Math.max(1, Math.floor((evaluation.overall_score * (currentProgress / 100)) / 10)) : 0}
+                  </p>
                 </div>
               </div>
 
@@ -237,14 +237,14 @@ function ChatInterface() {
                     </div>
                   ))}
                 </div>
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 shadow-inner">
                   <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">Partner Feedback</h3>
                   <p className="text-sm text-blue-900 leading-relaxed italic whitespace-pre-wrap">"{evaluation.feedback}"</p>
                 </div>
               </div>
 
               <div className="p-8 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-                <button onClick={() => window.location.href = '/leaderboard'} className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:shadow-xl transition-all">View Leaderboard</button>
+                <button onClick={() => window.location.href = '/leaderboard'} className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:shadow-xl transition-all active:scale-[0.98]">View Leaderboard</button>
               </div>
             </div>
           </div>
@@ -256,7 +256,7 @@ function ChatInterface() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-400 font-bold">Initialing Session...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-400 font-bold animate-pulse">Initializing Session...</div>}>
       <ChatInterface />
     </Suspense>
   );
