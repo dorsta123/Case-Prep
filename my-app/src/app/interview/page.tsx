@@ -132,12 +132,25 @@ function ChatInterface() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-4 bg-gray-50">
+      {/* Changed h-[90vh] to h-full or min-h generic to ensure mobile fit */}
       <div className="w-full max-w-3xl flex flex-col h-[90vh]">
         
-        {/* Header */}
+        {/* Header - MODIFIED */}
         <div className="mb-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-black tracking-tight">Case Session</h1>
-          <a href="/" className="text-sm font-bold text-blue-600 hover:underline">New Case</a>
+          <div>
+            <h1 className="text-xl font-bold text-black tracking-tight">Case Session</h1>
+            {/* Optional: You can keep the 'New Case' link here as small text if needed, or remove it since we have the End button */}
+            <a href="/" className="text-[10px] font-bold text-gray-400 hover:text-blue-600 uppercase tracking-widest">Back to Home</a>
+          </div>
+          
+          {/* END CASE BUTTON MOVED HERE */}
+          <button 
+            onClick={() => setShowConfirm(true)} 
+            disabled={isLoading || isEvaluating} 
+            className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 transition shadow-sm whitespace-nowrap"
+          >
+            End Case
+          </button>
         </div>
 
         {/* Chat Window */}
@@ -168,7 +181,7 @@ function ChatInterface() {
           </div>
         </div>
 
-        {/* Controls */}
+        {/* Controls - MODIFIED */}
         <div className="flex gap-2 mb-4">
           <input
             className="flex-1 p-4 border border-gray-200 rounded-xl text-black focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
@@ -179,7 +192,8 @@ function ChatInterface() {
             disabled={isLoading || isEvaluating}
           />
           <button onClick={sendMessage} disabled={isLoading || isEvaluating} className="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 transition-all">Send</button>
-          <button onClick={() => setShowConfirm(true)} disabled={isLoading || isEvaluating} className="bg-red-500 text-white px-4 rounded-xl font-bold hover:bg-red-600 transition shadow-sm">End Case</button>
+          
+          {/* REMOVED END CASE BUTTON FROM HERE */}
         </div>
 
         {/* --- MODALS --- */}
