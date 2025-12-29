@@ -31,6 +31,16 @@ export default function Leaderboard() {
     return { label: "Business Associate", color: "text-gray-600" };
   };
 
+  // --- MASKING HELPER FUNCTION ---
+  const maskUsername = (name: string) => {
+    if (!name) return "Unknown";
+    if (name.length <= 2) return name; // Show full name if very short (or return "****")
+    
+    const start = name.substring(0, 1);
+    const end = name.substring(name.length - 1);
+    return `${start}...${end}`;
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 p-8 flex flex-col items-center">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden">
@@ -47,11 +57,14 @@ export default function Leaderboard() {
               {leaders.map((user, index) => {
                 const tier = getTier(user.rating);
                 return (
-                  <div key={user.username} className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+                  <div key={index} className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
                     <div className="flex items-center gap-4">
                       <span className="text-2xl font-black text-gray-200 w-8">#{index + 1}</span>
                       <div>
-                        <p className="font-bold text-black">{user.username}</p>
+                        {/* APPLY MASKING HERE */}
+                        <p className="font-bold text-black" title={user.username}>
+                          {maskUsername(user.username)}
+                        </p>
                         <p className={`text-[10px] font-black uppercase tracking-widest ${tier.color}`}>{tier.label}</p>
                       </div>
                     </div>
