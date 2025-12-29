@@ -10,7 +10,7 @@ export type ChatMessage = {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 const config = {
-  model: "gemini-2.5-pro",
+  model: "gemini-2.5-flash",
   
   systemInstruction: `You are a senior McKinsey/BCG Case Interviewer. 
   
