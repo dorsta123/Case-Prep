@@ -176,60 +176,72 @@ function ChatInterface() {
   if (!sessionId) return <div className="p-10 font-bold">Error: No Session ID found.</div>;
 
   return (
-    <main className="flex h-dvh w-full flex-col items-center bg-white md:bg-gray-50 md:p-4">
-      <div className="w-full max-w-3xl flex flex-col h-full bg-white md:rounded-3xl md:shadow-2xl md:h-[90vh] overflow-hidden relative">
+    <main className="flex h-dvh w-full flex-col items-center bg-neutral-950 md:p-4 text-slate-100 font-sans selection:bg-cyan-500/30 relative overflow-hidden">
+      
+      {/* Ambient Background Effects (Made brighter for contrast) */}
+      <div className="fixed inset-0 pointer-events-none">
+         <div className="absolute -left-[10%] -top-[10%] h-[500px] w-[500px] rounded-full bg-blue-600/20 blur-[120px]" />
+         <div className="absolute -right-[10%] top-[40%] h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[100px]" />
+      </div>
+
+      {/* CONTAINER CHANGES: 
+         1. bg-slate-900 (Lighter than background)
+         2. shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] (Blue glow shadow)
+         3. border-white/10 (Crisper border)
+      */}
+      <div className="z-10 w-full max-w-3xl flex flex-col h-full bg-slate-900 md:rounded-3xl border-x md:border border-white/10 md:shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative">
         
-        {/* HEADER */}
-        <div className="shrink-0 z-10 bg-white/90 backdrop-blur-md border-b border-gray-100 px-4 py-3 flex justify-between items-center sticky top-0">
+        {/* HEADER - slightly lighter than container to separate it */}
+        <div className="shrink-0 z-10 bg-slate-900/90 backdrop-blur-md border-b border-white/5 px-4 py-3 flex justify-between items-center sticky top-0">
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-black tracking-tight leading-none">Case Session</h1>
-            <a href="/" className="text-[10px] font-medium text-gray-400 mt-1 hover:text-blue-600">Back to Home</a>
+            <h1 className="text-lg font-bold text-white tracking-tight leading-none flex items-center gap-2">
+              Case Session
+            </h1>
+            <a href="/" className="text-[10px] font-medium text-slate-400 mt-1 hover:text-cyan-400 transition-colors">Back to Home</a>
           </div>
           <button 
             onClick={() => setShowConfirm(true)} 
             disabled={isLoading || isEvaluating} 
-            className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-full border border-red-100 transition-colors"
+            className="text-xs font-bold text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 transition-colors disabled:opacity-50"
           >
             End Case
           </button>
         </div>
 
         {/* PROGRESS BAR */}
-        <div className="shrink-0 w-full bg-gray-50 px-4 py-2 border-b border-gray-100">
+        <div className="shrink-0 w-full bg-slate-900 px-4 py-2 border-b border-white/5">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Progress</span>
-            <span className="text-[9px] font-bold text-blue-600">{Math.round(currentProgress)}%</span>
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Progress</span>
+            <span className="text-[9px] font-bold text-cyan-400">{Math.round(currentProgress)}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
-            <div className="bg-blue-600 h-full transition-all duration-1000 ease-out" style={{ width: `${currentProgress}%` }} />
+          <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(6,182,212,0.5)]" style={{ width: `${currentProgress}%` }} />
           </div>
         </div>
 
         {/* CHAT WINDOW */}
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4 pb-4">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-5 pb-4 bg-slate-900">
           
           {messages.map((msg, index) => (
             <div key={index} className={`flex flex-col max-w-[85%] ${msg.role === "user" ? "ml-auto items-end" : "mr-auto items-start"}`}>
-              <span className="text-[10px] text-gray-400 mb-1 ml-1">
+              <span className="text-[10px] text-slate-500 mb-1 ml-1 uppercase tracking-wider font-bold">
                 {msg.role === "user" ? "You" : "Partner"}
               </span>
-              <div className={`px-4 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm ${
+              <div className={`px-5 py-3.5 rounded-2xl text-[15px] leading-relaxed shadow-md border ${
                 msg.role === "user" 
-                  ? "bg-blue-600 text-white rounded-br-none" 
-                  : "bg-gray-100 text-gray-800 rounded-bl-none border border-gray-200"
+                  ? "bg-blue-600 text-white rounded-br-none border-blue-500" 
+                  : "bg-slate-800 text-slate-200 rounded-bl-none border-slate-700"
               }`}>
                 {msg.parts[0].text}
               </div>
             </div>
           ))}
 
-          {/* LOADING INDICATOR (TEXT + SPINNER) */}
+          {/* LOADING INDICATOR */}
           {isLoading && (
              <div className="flex items-center gap-3 ml-2 mt-4 mb-2 animate-pulse">
-                {/* The Spinner */}
-                <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
-                {/* The Text */}
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <div className="w-5 h-5 border-2 border-slate-700 border-t-cyan-500 rounded-full animate-spin"></div>
+                <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">
                   Partner is replying...
                 </span>
              </div>
@@ -237,10 +249,10 @@ function ChatInterface() {
         </div>
 
         {/* INPUT AREA */}
-        <div className="shrink-0 p-3 bg-white border-t border-gray-100 pb-safe"> 
-          <div className="flex items-end gap-2 bg-gray-100 p-2 rounded-[28px] border border-transparent focus-within:border-blue-300 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+        <div className="shrink-0 p-4 bg-slate-900 border-t border-white/5 pb-safe"> 
+          <div className="flex items-end gap-2 bg-slate-950 p-2 rounded-[24px] border border-slate-700 focus-within:border-cyan-500/50 focus-within:ring-2 focus-within:ring-cyan-500/10 transition-all shadow-inner">
             <textarea
-              className="flex-1 bg-transparent border-none focus:ring-0 text-black placeholder-gray-500 resize-none max-h-32 py-2.5 px-3 text-sm"
+              className="flex-1 bg-transparent border-none focus:ring-0 text-slate-200 placeholder-slate-600 resize-none max-h-32 py-3 px-4 text-sm"
               rows={1}
               value={input}
               onChange={(e) => {
@@ -256,12 +268,12 @@ function ChatInterface() {
               }}
               placeholder="Address the prompt..."
               disabled={isLoading || isEvaluating}
-              style={{ minHeight: '44px' }} 
+              style={{ minHeight: '48px' }} 
             />
             <button 
               onClick={sendMessage} 
               disabled={isLoading || isEvaluating || !input.trim()} 
-              className="bg-black text-white p-2.5 rounded-full hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-black transition-all flex-shrink-0 mb-0.5"
+              className="bg-cyan-500 hover:bg-cyan-400 text-black p-3 rounded-full disabled:opacity-30 disabled:hover:bg-cyan-500 transition-all flex-shrink-0 mb-1 shadow-lg shadow-cyan-500/20"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                 <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
@@ -272,13 +284,13 @@ function ChatInterface() {
 
         {/* CONFIRMATION MODAL */}
         {showConfirm && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
-            <div className="bg-white p-6 rounded-3xl max-w-xs w-full shadow-2xl text-center">
-              <h3 className="text-lg font-bold mb-2">Finish Interview?</h3>
-              <p className="text-gray-500 text-xs mb-6 leading-relaxed">You cannot resume after this.</p>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-6">
+            <div className="bg-slate-900 border border-slate-700 p-6 rounded-3xl max-w-xs w-full shadow-2xl text-center">
+              <h3 className="text-lg font-bold mb-2 text-white">Finish Interview?</h3>
+              <p className="text-slate-400 text-xs mb-6 leading-relaxed">You cannot resume after this.</p>
               <div className="flex gap-2">
-                <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 text-sm font-bold text-gray-500 bg-gray-100 rounded-xl">Back</button>
-                <button onClick={handleEndCase} className="flex-1 py-3 text-sm font-bold bg-black text-white rounded-xl">Confirm</button>
+                <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 text-sm font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">Back</button>
+                <button onClick={handleEndCase} className="flex-1 py-3 text-sm font-bold bg-white text-black hover:bg-slate-200 rounded-xl transition-colors">Confirm</button>
               </div>
             </div>
           </div>
@@ -286,44 +298,45 @@ function ChatInterface() {
 
         {/* EVALUATING OVERLAY */}
         {isEvaluating && (
-          <div className="fixed inset-0 bg-white/95 backdrop-blur-xl flex flex-col items-center justify-center z-[70]">
-            <div className="w-12 h-12 border-4 border-gray-100 border-t-black rounded-full animate-spin mb-4"></div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">Synthesizing Feedback...</p>
+          <div className="fixed inset-0 bg-[#0B0C10]/95 backdrop-blur-xl flex flex-col items-center justify-center z-[70]">
+            <div className="w-12 h-12 border-4 border-slate-800 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
+            <p className="text-xs font-bold text-cyan-500 uppercase tracking-widest animate-pulse">Synthesizing Feedback...</p>
           </div>
         )}
 
         {/* RESULTS CARD */}
         {evaluation && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-end md:items-center justify-center z-50 md:p-4">
-            <div className="bg-white w-full rounded-t-3xl md:rounded-3xl max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh] animate-slide-up">
+            <div className="bg-slate-900 w-full rounded-t-3xl md:rounded-3xl max-w-lg shadow-2xl border border-slate-700 overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh] animate-slide-up">
               
-              <div className="p-6 border-b border-gray-100 bg-white sticky top-0 z-10 flex justify-between items-center">
+              <div className="p-6 border-b border-slate-800 bg-slate-900 sticky top-0 z-10 flex justify-between items-center">
                  <div>
-                    <h2 className="text-xl font-black text-black">Results</h2>
-                    <p className="text-blue-600 font-bold text-xs mt-1">Score: {evaluation.overall_score}/100</p>
+                    <h2 className="text-xl font-black text-white">Results</h2>
+                    <p className="text-cyan-400 font-bold text-xs mt-1">Score: {evaluation.overall_score}/100</p>
                  </div>
-                 <button onClick={() => window.location.href = '/leaderboard'} className="text-xs font-bold bg-black text-white px-4 py-2 rounded-lg">
-                    Done
+                 <button onClick={() => window.location.href = '/leaderboard'} className="text-xs font-bold bg-white text-black hover:bg-slate-200 px-4 py-2 rounded-lg transition-colors">
+                   Done
                  </button>
               </div>
 
               <div className="p-6 overflow-y-auto custom-scrollbar space-y-6 pb-12">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Completion", val: Math.round(currentProgress), color: "text-teal-600" },
-                    { label: "Structure", val: evaluation.structure, color: "text-purple-600" },
-                    { label: "Logic", val: evaluation.business_logic, color: "text-green-600" },
-                    { label: "Quant", val: evaluation.quant_accuracy, color: "text-orange-600" }
+                    { label: "Completion", val: Math.round(currentProgress), color: "text-cyan-400" },
+                    { label: "Structure", val: evaluation.structure, color: "text-purple-400" },
+                    { label: "Logic", val: evaluation.business_logic, color: "text-emerald-400" },
+                    { label: "Quant", val: evaluation.quant_accuracy, color: "text-orange-400" }
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                      <p className="text-[9px] uppercase font-bold text-gray-400 tracking-widest mb-1">{stat.label}</p>
+                    <div key={stat.label} className="bg-slate-800 p-3 rounded-xl border border-white/5">
+                      <p className="text-[9px] uppercase font-bold text-slate-500 tracking-widest mb-1">{stat.label}</p>
                       <p className={`text-xl font-black ${stat.color}`}>{stat.val}%</p>
                     </div>
                   ))}
                 </div>
-                <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
+                <div className="bg-slate-950 p-5 rounded-xl border border-blue-500/20 relative">
+                   <div className="absolute left-0 top-4 bottom-4 w-1 bg-blue-500 rounded-r"></div>
                    <h3 className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2">Feedback</h3>
-                   <p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{evaluation.feedback}</p>
+                   <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{evaluation.feedback}</p>
                 </div>
               </div>
             </div>
