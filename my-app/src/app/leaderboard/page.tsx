@@ -42,35 +42,73 @@ export default function Leaderboard() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 flex flex-col items-center">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div className="bg-black p-8 text-white">
-          <h1 className="text-3xl font-black italic tracking-tighter">GLOBAL RANKINGS</h1>
-          <p className="text-gray-400 text-sm mt-1">Top Case Solvers based on LP Gained</p>
+   <main className="min-h-screen bg-[#0B0C10] p-4 md:p-8 flex flex-col items-center relative overflow-hidden font-sans selection:bg-cyan-500/30">
+      
+      {/* Ambient Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+         <div className="absolute left-1/2 -top-[20%] h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[120px]" />
+         <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[100px]" />
+      </div>
+
+      <div className="w-full max-w-2xl bg-[#0F1115]/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/10 overflow-hidden relative z-10">
+        
+        {/* HEADER */}
+        <div className="bg-[#161b22] p-8 border-b border-white/5 relative overflow-hidden">
+          {/* Decorative shine */}
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 blur-2xl rounded-full"></div>
+          
+          <h1 className="text-3xl font-black italic tracking-tighter text-white relative z-10 flex items-center gap-3">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">GLOBAL</span> RANKINGS
+          </h1>
+          <p className="text-slate-400 text-sm mt-2 font-medium">Top Case Solvers based on LP Gained</p>
         </div>
 
-        <div className="p-4">
+        {/* LIST AREA */}
+        <div className="p-4 md:p-6 min-h-[400px]">
           {loading ? (
-            <p className="text-center py-10 animate-pulse font-bold text-gray-300">Loading Rankings...</p>
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+               <div className="w-8 h-8 border-2 border-slate-700 border-t-cyan-500 rounded-full animate-spin"></div>
+               <p className="animate-pulse font-bold text-xs text-slate-500 uppercase tracking-widest">Loading Leaderboard...</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {leaders.map((user, index) => {
                 const tier = getTier(user.rating);
+                // Highlight Top 3
+                const isTop3 = index < 3;
+                const rankColor = index === 0 ? "text-yellow-400" : index === 1 ? "text-slate-300" : index === 2 ? "text-orange-400" : "text-slate-700";
+                
                 return (
-                  <div key={index} className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl font-black text-gray-200 w-8">#{index + 1}</span>
+                  <div 
+                    key={index} 
+                    className={`group flex items-center justify-between p-4 rounded-2xl transition-all border ${
+                      isTop3 
+                        ? "bg-slate-800/60 border-white/10 hover:border-cyan-500/30 hover:bg-slate-800" 
+                        : "bg-transparent border-transparent hover:bg-slate-800/40 hover:border-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center gap-5">
+                      <span className={`text-2xl font-black italic w-8 text-center ${rankColor}`}>
+                        #{index + 1}
+                      </span>
+                      
                       <div>
-                        {/* APPLY MASKING HERE */}
-                        <p className="font-bold text-black" title={user.username}>
+                        {/* Masking Applied Here */}
+                        <p className={`font-bold text-base ${isTop3 ? "text-white" : "text-slate-300"} group-hover:text-white transition-colors`} title={user.username}>
                           {maskUsername(user.username)}
                         </p>
-                        <p className={`text-[10px] font-black uppercase tracking-widest ${tier.color}`}>{tier.label}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                           <span className={`h-1.5 w-1.5 rounded-full ${index === 0 ? "bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" : "bg-slate-600"}`}></span>
+                           <p className={`text-[9px] font-black uppercase tracking-widest ${tier.color} opacity-80`}>
+                             {tier.label}
+                           </p>
+                        </div>
                       </div>
                     </div>
+
                     <div className="text-right">
-                      <p className="text-xl font-black text-black">{user.rating}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">LP</p>
+                      <p className="text-xl font-black text-white font-mono tracking-tight">{user.rating}</p>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase">LP Gained</p>
                     </div>
                   </div>
                 );
@@ -78,11 +116,17 @@ export default function Leaderboard() {
             </div>
           )}
         </div>
-        <div className="p-6 bg-gray-50 border-t">
-          <button onClick={() => window.location.href = '/'} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-all">
+
+        {/* FOOTER ACTION */}
+        <div className="p-6 bg-[#0B0C10] border-t border-white/5">
+          <button 
+            onClick={() => window.location.href = '/'} 
+            className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-black rounded-xl font-bold shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+          >
             Start New Case
           </button>
         </div>
+        
       </div>
     </main>
   );
